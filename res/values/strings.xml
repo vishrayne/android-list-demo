@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">AmazingListSample</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="permlab_read">read mobile express storage</string>
+    <string name="permdesc_read">Allows the application to read sensitive mobile express details.</string>
+    <string name="permlab_write">write to mobile express storage</string>
+    <string name="permdesc_write">Allows the application to write to mobile express storage.</string>
+    <string name="list_header_label">Header</string>
+    <string name="list_item_label">Item</string>
+    <string name="list_item_date_label">Date</string>
+
+</resources>

@@ -31,10 +31,10 @@
             android:text="Add" />
     </LinearLayout>
 
-    <ListView
+    <com.example.amazinglistsample.widget.PinnedSectionListView
         android:id="@+id/list"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" >
-    </ListView>
+    </com.example.amazinglistsample.widget.PinnedSectionListView>
 
 </LinearLayout>

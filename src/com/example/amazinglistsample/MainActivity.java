@@ -28,8 +28,10 @@ import android.widget.Toast;
 
 import com.example.amazinglistsample.db.TodoContentProvider;
 import com.example.amazinglistsample.db.TodoTable;
+import com.example.amazinglistsample.widget.PinnedSectionListView.PinnedSectionListAdapter;
 
 public class MainActivity extends FragmentActivity implements LoaderManager.LoaderCallbacks<Cursor> {
+    private final String TAG = "CListActivity";
     // private static final int ACTIVITY_CREATE = 0;
 
     private SectionedCursorAdapter adapter;
@@ -98,7 +100,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
      * Custom sectioned Adapter. Source:
      * http://kmansoft.com/2010/11/16/adding-group-headers-to-listview/
      */
-    class SectionedCursorAdapter extends CursorAdapter {
+    class SectionedCursorAdapter extends CursorAdapter implements PinnedSectionListAdapter{
         private static final int VIEW_TYPE_GROUP_START = 0;
         private static final int VIEW_TYPE_GROUP_CONT = 1;
         private static final int VIEW_TYPE_COUNT = 2;
@@ -214,6 +216,11 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                 return true;
             }
 
+            return false;
+        }
+
+        @Override
+        public boolean isItemViewTypePinned(int viewType) {
             return false;
         }
 

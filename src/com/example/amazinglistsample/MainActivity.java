@@ -16,7 +16,6 @@ import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.CursorAdapter;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
@@ -96,8 +95,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     }
 
     /**
-     * Custom sectioned Adapter.
-     * Source: http://kmansoft.com/2010/11/16/adding-group-headers-to-listview/ 
+     * Custom sectioned Adapter. Source:
+     * http://kmansoft.com/2010/11/16/adding-group-headers-to-listview/
      */
     class SectionedCursorAdapter extends CursorAdapter {
         private static final int VIEW_TYPE_GROUP_START = 0;
@@ -145,7 +144,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         public void bindView(View view, Context context, Cursor cursor) {
             ViewHolder holder = (ViewHolder) view.getTag();
             holder.itemLabel.setText(cursor.getString(mColSummary));
-            holder.itemDate.setText("dummy data");
+            holder.itemDate.setText("Position: " + cursor.getPosition());
 
             if (holder.itemHeader.getVisibility() == View.VISIBLE) {
                 Date date = new Date(cursor.getLong(mColCreatedAt));
@@ -164,26 +163,12 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             }
 
             int position = cursor.getPosition();
-            int nViewType;
-
-            if (position == 0) {
-                // Group header for position 0
-                nViewType = VIEW_TYPE_GROUP_START;
-            } else {
-                // For other positions, decide based on data
-                boolean newGroup = isNewGroup(cursor, position);
-
-                if (newGroup) {
-                    nViewType = VIEW_TYPE_GROUP_START;
-                } else {
-                    nViewType = VIEW_TYPE_GROUP_CONT;
-                }
-            }
+            
 
             View rowView = mInflater.inflate(R.layout.item, parent, false);
             View header = rowView.findViewById(R.id.todo_header);
 
-            if (nViewType == VIEW_TYPE_GROUP_START) {
+            if (getItemViewType(position) == VIEW_TYPE_GROUP_START) {
                 // Ignore clicks on the list header
                 header.setVisibility(View.VISIBLE);
                 header.setOnClickListener(new OnClickListener() {

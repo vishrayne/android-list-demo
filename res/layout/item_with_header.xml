@@ -4,6 +4,11 @@
     android:layout_height="wrap_content"
     android:orientation="vertical" >
 
+    <include
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        layout="@layout/header" />
+
     <TextView
         android:id="@+id/todo_item"
         android:layout_width="wrap_content"

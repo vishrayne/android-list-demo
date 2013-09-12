@@ -8,6 +8,7 @@ import java.util.Locale;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
@@ -26,17 +27,24 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.emilsjolander.components.stickylistheaders.StickyListHeadersAdapter;
 import com.example.amazinglistsample.db.TodoContentProvider;
 import com.example.amazinglistsample.db.TodoTable;
-import com.example.amazinglistsample.widget.PinnedSectionListView.PinnedSectionListAdapter;
+import com.haarman.listviewanimations.swinginadapters.AnimationAdapter;
+import com.haarman.listviewanimations.swinginadapters.prepared.AlphaInAnimationAdapter;
 
 public class MainActivity extends FragmentActivity implements LoaderManager.LoaderCallbacks<Cursor> {
     private final String TAG = "CListActivity";
     // private static final int ACTIVITY_CREATE = 0;
 
-    private SectionedCursorAdapter adapter;
-    private ListView listView;
+    private StickyListAdapter adapter;
     private EditText noteSummaryET;
+
+    private ListView listView;
+    private ListView stickyListView;
+    private ListView currentListView;
+
+    private final SimpleDateFormat gDateFormatDataItem = new SimpleDateFormat("E, dd MMM yyyy", Locale.US);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +52,11 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         setContentView(R.layout.activity_main);
 
         listView = (ListView) findViewById(R.id.list);
+        stickyListView = (ListView) findViewById(R.id.sticky_list);
+
+        listView.setVisibility(View.GONE);
+        currentListView = stickyListView;
+
         noteSummaryET = (EditText) findViewById(R.id.note_edit_text);
 
         fillData();
@@ -75,8 +88,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
     private void fillData() {
         getSupportLoaderManager().initLoader(0, null, this);
-        adapter = new SectionedCursorAdapter(this, null, false);
-        listView.setAdapter(adapter);
+
     }
 
     @Override
@@ -88,7 +100,10 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        adapter.swapCursor(data);
+        adapter = new StickyListAdapter(this, data, false);
+        AnimationAdapter animAdapter = new AlphaInAnimationAdapter(adapter);
+        animAdapter.setAbsListView(currentListView);
+        currentListView.setAdapter(animAdapter);
     }
 
     @Override
@@ -96,11 +111,81 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         adapter.swapCursor(null);
     }
 
+    static class ViewHolder {
+        public TextView itemLabel;
+        public TextView itemDate;
+        public TextView itemHeader;
+    }
+
+    // ---- Sticky Adapter: Custom adapter #3 ---------//
+
+    class StickyListAdapter extends CursorAdapter implements StickyListHeadersAdapter {
+
+        private LayoutInflater mInflater;
+
+        public int mColSummary = -1;
+        public int mColCreatedAt = -1;
+
+        public StickyListAdapter(Context context, Cursor c, boolean autoRequery) {
+            super(context, c, autoRequery);
+            mInflater = LayoutInflater.from(context);
+        }
+
+        @Override
+        public long getHeaderId(int position) {
+            return 0;
+        }
+
+        @Override
+        public View getHeaderView(int position, View view, ViewGroup parent) {
+            TextView headerView = (TextView) view;
+
+            if (headerView == null) {
+                headerView = (TextView) mInflater.inflate(R.layout.header, parent, false);
+                headerView.setBackgroundColor(Color.CYAN);
+            }
+
+            Date date = new Date(((Cursor) getItem(position)).getLong(mColCreatedAt));
+            headerView.setText(gDateFormatDataItem.format(date));
+
+            return headerView;
+        }
+
+        @Override
+        public void bindView(View view, Context context, Cursor cursor) {
+            ViewHolder holder = (ViewHolder) view.getTag();
+            holder.itemLabel.setText(cursor.getString(mColSummary));
+            holder.itemDate.setText("Position: " + cursor.getPosition());
+        }
+
+        @Override
+        public View newView(Context context, Cursor cursor, ViewGroup parent) {
+            if (mColSummary == -1) {
+                mColSummary = cursor.getColumnIndexOrThrow(TodoTable.COLUMN_SUMMARY);
+            }
+            if (mColCreatedAt == -1) {
+                mColCreatedAt = cursor.getColumnIndexOrThrow(TodoTable.COLUMN_NAME_CREATE_DATE);
+            }
+
+            View rowView = mInflater.inflate(R.layout.item, parent, false);
+
+            ViewHolder holder = new ViewHolder();
+            holder.itemLabel = (TextView) rowView.findViewById(R.id.todo_item);
+            holder.itemDate = (TextView) rowView.findViewById(R.id.todo_date);
+            rowView.setTag(holder);
+
+            return rowView;
+        }
+
+    }
+
+    // ---- Sectioned Adapter: Custom adapter #2 ------//
+
     /**
      * Custom sectioned Adapter. Source:
      * http://kmansoft.com/2010/11/16/adding-group-headers-to-listview/
      */
-    class SectionedCursorAdapter extends CursorAdapter implements PinnedSectionListAdapter{
+    class SectionedCursorAdapter extends CursorAdapter {
         private static final int VIEW_TYPE_GROUP_START = 0;
         private static final int VIEW_TYPE_GROUP_CONT = 1;
         private static final int VIEW_TYPE_COUNT = 2;
@@ -109,8 +194,6 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
         public int mColSummary = -1;
         public int mColCreatedAt = -1;
-
-        private final SimpleDateFormat gDateFormatDataItem = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss", Locale.US);
 
         public SectionedCursorAdapter(Context context, Cursor cursor, boolean autoRequery) {
             super(context, cursor, autoRequery);
@@ -149,6 +232,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             holder.itemDate.setText("Position: " + cursor.getPosition());
 
             if (holder.itemHeader.getVisibility() == View.VISIBLE) {
+                holder.itemHeader.setBackgroundColor(Color.BLUE);
                 Date date = new Date(cursor.getLong(mColCreatedAt));
                 holder.itemHeader.setText(gDateFormatDataItem.format(date));
             }
@@ -165,9 +249,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             }
 
             int position = cursor.getPosition();
-            
 
-            View rowView = mInflater.inflate(R.layout.item, parent, false);
+            View rowView = mInflater.inflate(R.layout.item_with_header, parent, false);
             View header = rowView.findViewById(R.id.todo_header);
 
             if (getItemViewType(position) == VIEW_TYPE_GROUP_START) {
@@ -219,17 +302,6 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             return false;
         }
 
-        @Override
-        public boolean isItemViewTypePinned(int viewType) {
-            return false;
-        }
-
-    }
-
-    static class ViewHolder {
-        public TextView itemLabel;
-        public TextView itemDate;
-        public TextView itemHeader;
     }
 
 }

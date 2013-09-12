@@ -3,8 +3,8 @@
     android:id="@+id/todo_header"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/darker_gray"
     android:text="@string/list_header_label"
+    android:textColor="@android:color/white"
     android:textStyle="bold" >
 
 </TextView>

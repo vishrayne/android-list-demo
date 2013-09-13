@@ -17,6 +17,9 @@ import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.CursorAdapter;
 import android.text.TextUtils;
+import android.util.Log;
+import android.util.SparseArray;
+import android.util.SparseIntArray;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
@@ -43,6 +46,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     private ListView listView;
     private ListView stickyListView;
     private ListView currentListView;
+
+    private SparseIntArray sectionMap = new SparseIntArray();
 
     private final SimpleDateFormat gDateFormatDataItem = new SimpleDateFormat("E, dd MMM yyyy", Locale.US);
 
@@ -126,14 +131,21 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         public int mColSummary = -1;
         public int mColCreatedAt = -1;
 
+        public int groupID = 0;
+        public int prevGroupID = 0;
+
         public StickyListAdapter(Context context, Cursor c, boolean autoRequery) {
             super(context, c, autoRequery);
             mInflater = LayoutInflater.from(context);
+            if (sectionMap == null) {
+                sectionMap = new SparseIntArray();
+            }
+            sectionMap.clear();
         }
 
         @Override
         public long getHeaderId(int position) {
-            return 0;
+            return sectionMap.get(position);
         }
 
         @Override
@@ -153,9 +165,26 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
         @Override
         public void bindView(View view, Context context, Cursor cursor) {
+            int position = cursor.getPosition();
+
+            // -- Calculating whether this row belongs to a specific group or not. -- //
+            if (isANewGroup(getCursor(), position)) {
+                Log.d(TAG, "New group found at position " + position);
+                groupID += 1;
+            }
+
+            // If section map doesn't contain a valid groupID for this
+            // position, add to it.
+            if (sectionMap.get(position, -1) == -1) {
+                sectionMap.put(position, groupID);
+            } else {
+                groupID = sectionMap.get(position);
+            }
+            // -- Group identification ends here -- //
+
             ViewHolder holder = (ViewHolder) view.getTag();
             holder.itemLabel.setText(cursor.getString(mColSummary));
-            holder.itemDate.setText("Position: " + cursor.getPosition());
+            holder.itemDate.setText("Position: " + position);
         }
 
         @Override
@@ -175,6 +204,36 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             rowView.setTag(holder);
 
             return rowView;
+        }
+
+        private boolean isANewGroup(Cursor cursor, int position) {
+            if (position == 0) {
+                return false;
+            }
+            // Get date values for current and previous data items
+            long nWhenThis = cursor.getLong(mColCreatedAt);
+
+            cursor.moveToPosition(position - 1);
+            long nWhenPrev = cursor.getLong(mColCreatedAt);
+
+            // Restore cursor position
+            cursor.moveToPosition(position);
+
+            // Compare date values, ignore time values
+            Calendar calThis = Calendar.getInstance();
+            calThis.setTimeInMillis(nWhenThis);
+
+            Calendar calPrev = Calendar.getInstance();
+            calPrev.setTimeInMillis(nWhenPrev);
+
+            int nDayThis = calThis.get(Calendar.DAY_OF_YEAR);
+            int nDayPrev = calPrev.get(Calendar.DAY_OF_YEAR);
+
+            if (nDayThis != nDayPrev || calThis.get(Calendar.YEAR) != calPrev.get(Calendar.YEAR)) {
+                return true;
+            }
+
+            return false;
         }
 
     }
